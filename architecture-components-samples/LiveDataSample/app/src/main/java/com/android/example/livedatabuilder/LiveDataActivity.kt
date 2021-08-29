@@ -19,14 +19,19 @@ import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.android.example.livedata.R
 import com.android.example.livedata.databinding.ActivityLivedataBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class LiveDataActivity : AppCompatActivity() {
 
     // Obtain ViewModel
     private val viewmodel: LiveDataViewModel by viewModels { LiveDataVMFactory }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -40,6 +45,32 @@ class LiveDataActivity : AppCompatActivity() {
 
         // Bind ViewModel
         binding.viewmodel = viewmodel
+        lifecycle.addObserver(LiveDataActivityLifecycleObserver())
+
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                // Restartable lifecycle-aware coroutines.
+                // code here will be started after onResume(), and be destroyed after onPause(). And repeats.
+                println("repeatOnLifecycle()")
+            }
+        }
+
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                println("withContext on ${Thread.currentThread()}")
+            }
+        }
+
+        lifecycleScope.launchWhenResumed {
+            println("launchWhenResumed() 1 on ${Thread.currentThread()}")
+            withContext(Dispatchers.Default) {
+                println("launchWhenResumed().withContext() on ${Thread.currentThread()}")
+            }
+            // next line will only be invoked after withContext{} has finished.
+            // the next line is automatically suspended if the Lifecycle is not *at least* RESUMED.
+            println("launchWhenResumed() 2 on ${Thread.currentThread()}")
+        }
+
     }
 }
 

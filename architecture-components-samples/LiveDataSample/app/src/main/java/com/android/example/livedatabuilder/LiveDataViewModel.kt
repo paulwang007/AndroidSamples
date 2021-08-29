@@ -51,8 +51,15 @@ class LiveDataViewModel(
     // Exposed cached value in the data source that can be updated later on
     val cachedValue = dataSource.cachedData
 
+    val liveData: LiveData<String> = liveData {
+        emit("hello")
+    }
+
     // Called when the user clicks on the "FETCH NEW DATA" button. Updates value in data source.
     fun onRefresh() {
+
+        liveData.switchMap { liveData(Dispatchers.IO) { emit("hi") } }
+
         // Launch a coroutine that reads from a remote data source and updates cache
         viewModelScope.launch {
             dataSource.fetchNewData()
@@ -80,7 +87,7 @@ object LiveDataVMFactory : ViewModelProvider.Factory {
 
     private val dataSource = DefaultDataSource(Dispatchers.IO)
 
-    override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
         @Suppress("UNCHECKED_CAST")
         return LiveDataViewModel(dataSource) as T
     }
